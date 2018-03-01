@@ -1,9 +1,12 @@
-# Running this demo
+# ArcGIS Rest JS / Vanilla JS Demo
 
-1. Make sure you run `npm run bootstrap` in the root folder to setup the dependencies
-2. Register a new app on https://developers.arcgis.com
-3. Add a redirect URL of `http://localhost:8080/post-sign-in.html` to your app.
-4. Copy the `config.js.template` file, rename it to `config.js`
-5. Copy your apps client id into your new `config.js` file.
-6. `npm start`
-7. Visit http://localhost:8080 and click "Sign In" to start the OAuth 2.0 process.
+This demo uses Vanilla JS to implement OAuth2 using
+the `arcgis-rest-js` libraries.
+
+## Running this demo
+1. Like all the other demo apps, run `npm run bootstrap` in the root directory.
+1. Register an app at [https://developers.arcgis.com](https://developers.arcgis.com).
+1. Add a redirect URL of `http://localhost:8080` to your new app.
+1. Copy the `Client ID` of your new app.
+1. Run `npm start` to spin up the development server.
+1. Visit [http://localhost:8080](http://localhost:8080) and paste the copied `Client ID`.
