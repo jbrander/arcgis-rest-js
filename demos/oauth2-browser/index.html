@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>ArcGIS Rest JS Vanilla JS</title>
+    <title>ArcGIS REST JS Browser OAuth2</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" href="./style.css">
   </head>
@@ -16,10 +16,10 @@
             </div>
             <div class="col-sm-9">
               <h2>
-                ArcGIS Rest JS Vanilla JS Demo
+                ArcGIS REST JS Browser OAuth2
               </h2>
               <p>
-                A vanilla JS application utilizing the arcgis-rest-js library.
+                An application demonstrating browser-based named user login.
               </p>
             </div>
           </div>
@@ -29,7 +29,7 @@
         <div class="row">
           <div class="col-xs-12">
             <div id="clientIdGroup" class="form-group">
-              <label class="control-label">Client ID</label>
+              <label class="control-label">ClientID</label>
               <!-- This is input required for the app. -->
               <input
                 id="clientId"
@@ -39,11 +39,11 @@
               >
             </div>
             <p class="help-block">
-              You can generate your own client id by creating an application on the
-              <a target='_blank' href='https://developers.arcgis.com/'>
+              You can generate your own clientid by creating an application on the
+              <a target='_blank' href='https://developers.arcgis.com/documentation/core-concepts/security-and-authentication/browser-based-user-logins/'>
                 ArcGIS for Developers
               </a>
-              site. Be sure to add
+              website. Be sure to add
               <code id="redirect_uri">
                 <!-- Redirect URI will be injected here. -->
               </code>
@@ -57,9 +57,10 @@
             <button class="btn btn-primary btn-block" id='withPopupButton'>Sign In (with popup)</button>
           </div>
           <div class="col-xs-6">
-            <button class="btn btn-primary btn-block" id='withoutPopupButton'>Sign In (without popup)</button>
+            <button class="btn btn-primary btn-block" id='inlineRedirectButton'>Sign In (inline redirect)</button>
           </div>
         </div>
+
         <div class="row">
           <div class="col-xs-12 text-center">
             <p id="sessionInfo" class="info-panel">
@@ -67,14 +68,31 @@
             </p>
           </div>
         </div>
+
+        <div class="row">
+          <div class="col-xs-3">
+          </div>
+          <div class="col-xs-6 text-center">
+            <!-- Event listeners will be added to these buttons. -->
+            <button class="btn btn-primary btn-block btn-warning" id='signOutButton'>Sign Out</button>
+          </div>
+          <div class="col-xs-3">
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- pull clientid from config.js if present -->
+    <script src="config.js"></script>
     <script src="node_modules/@esri/arcgis-rest-request/dist/umd/arcgis-rest-request.umd.js"></script>
     <script src="node_modules/@esri/arcgis-rest-auth/dist/umd/arcgis-rest-auth.umd.js"></script>
     <script>
       // Define a global session variable.
       let session = null;
+
+      // a clientId will either be provided via config.js or entered manually
+      let clientId;
+
       // Check to see if there is a serialized session in local storage.
       const serializedSession = localStorage.getItem('__ARCGIS_REST_USER_SESSION__');
       if (serializedSession !== null && serializedSession !== "undefined") {
@@ -84,27 +102,26 @@
         parsed.tokenExpires = new Date(parsed.tokenExpires);
         // Create the new session object.
         session = new arcgisRest.UserSession(parsed);
-        console.log(session);
+        // console.log(session);
         // Update the UI.
         document.getElementById('clientId').value = session.clientId;
+
+        // Clear the previous session.
+        localStorage.removeItem('__ARCGIS_REST_USER_SESSION__');
       }
-      // Clear the previous session.
-      localStorage.removeItem('__ARCGIS_REST_USER_SESSION__');
 
       // Define the variable used for the redirect uri.
       const redirect_uri = `${window.location.origin}${window.location.pathname}`;
       // Inject that value into the page text.
       document.getElementById('redirect_uri').innerHTML = redirect_uri;
 
-      // Funtion to check that a client id is present.
+      // Function to check that a client id is present.
       function requireClientId() {
         // Pull out the client id.
-        let clientId = document.getElementById('clientId').value;
-        // Reset the error tracker to null.
-        let clientIdError = null;
+        clientId = document.getElementById('clientId').value || configClientId;
+
         // If there is no client id, flag input with error and return false.
         if (!clientId) {
-          clientIdError = true;
           document.getElementById('clientIdGroup').classList.add('has-error');
           return false;
         }
@@ -121,10 +138,11 @@
       // Function to update the UI with session info.
       function updateSessionInfo(session) {
         let sessionInfo = document.getElementById('sessionInfo')
-        if(session) {
+        if (session) {
           sessionInfo.classList.remove('bg-info');
           sessionInfo.classList.add('bg-success');
           sessionInfo.innerHTML = `Logged in as ${session.username}.`;
+          localStorage.setItem('__ARCGIS_REST_USER_SESSION__', JSON.stringify(session));
         } else {
           sessionInfo.classList.remove('bg-success');
           sessionInfo.classList.add('bg-info');
@@ -139,8 +157,7 @@
       document.getElementById('withPopupButton').addEventListener('click', (event) => {
         event.preventDefault();
         if (requireClientId()) {
-          // Grab the client id value.
-          let clientId = document.getElementById('clientId').value;
+
           // Begin an OAuth2 login using a popup.
           arcgisRest.UserSession.beginOAuth2({
             clientId,
@@ -158,10 +175,10 @@
       });
 
       // Attach a listener to the sign in buttons.
-      document.getElementById('withoutPopupButton').addEventListener('click', (event) => {
+      document.getElementById('inlineRedirectButton').addEventListener('click', (event) => {
         event.preventDefault();
         if (requireClientId()) {
-          let clientId = document.getElementById('clientId').value;
+          // let clientId = document.getElementById('clientId').value || configClientId;
           // Begin an OAuth2 login without a popup.
           arcgisRest.UserSession.beginOAuth2({
             clientId,
@@ -169,6 +186,16 @@
             popup: false,
           });
         }
+      });
+
+      // Attach a listener to the sign in buttons.
+      document.getElementById('signOutButton').addEventListener('click', (event) => {
+        event.preventDefault();
+
+        // Clear the previous session.
+        session = null;
+        localStorage.removeItem('__ARCGIS_REST_USER_SESSION__');
+        updateSessionInfo();
       });
     </script>
   </body>
